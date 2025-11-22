@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TransFlow Prime +</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+    <style>
+      :root{
+        --bg:#0c0c0c;
+        --text:#f5f5f5;
+        --gray:#1a1a1a;
+        --gray-dark:#333;
+        --card:#111111;
+        --primary:#000000;
+        --secondary:#06c167;
+        --radius:12px;
+      }
+      *{box-sizing:border-box;font-family:Inter,system-ui}
+      body{
+        margin:0;
+        background:linear-gradient(180deg,#00141e,#002b3a 40%, #000000 100%);
+        color:var(--text);
+      }
+      header{
+        background:#0d0d0d;
+        border-bottom:1px solid #1f1f1f;
+        padding:18px 26px;
+        display:flex;justify-content:space-between;align-items:center;
+      }
+      header h1{margin:0;font-size:22px;font-weight:700;color:#f5f5f5;}
+      nav a{ text-decoration:none;color:#cccccc;margin-left:18px;font-size:15px;}
+      nav a:hover{color:#fff}
+
+      main{
+        padding:24px;
+        max-width:1200px;
+        margin:0 auto;
+        display:grid;
+        grid-template-columns:1fr 0.8fr;
+        gap:24px;
+      }
+      section{
+        background:var(--card);
+        border:1px solid var(--gray);
+        padding:20px;
+        border-radius:var(--radius);
+      }
+      section h2{margin-top:0;font-size:18px;font-weight:600}
+
+      #map{
+        background:#d9d9d9;
+        height:360px;
+        border-radius:var(--radius);
+      }
+
+      label{display:flex;flex-direction:column;font-size:14px;margin-bottom:10px}
+      input, select{margin-top:6px;padding:10px;border-radius:8px;border:1px solid var(--gray-dark);}
+      button{padding:12px 16px;border-radius:8px;font-weight:600;border:0;cursor:pointer;}
+      button.primary{background:#000;color:#fff}
+      button.primary:hover{background:#333}
+      button.secondary{background:#f1f1f1;color:#000;border:1px solid #ccc}
+      .btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;}
+
+      .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+      .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+      .card{border:1px solid var(--gray);padding:16px;border-radius:var(--radius);background:#141414;color:var(--text);}
+
+      #tabela-saldos{width:100%;border-collapse:collapse;margin-top:14px}
+      #tabela-saldos th,#tabela-saldos td{border-bottom:1px solid var(--gray-dark);padding:12px 8px;text-align:left;}
+
+      @media(max-width:900px){ main{grid-template-columns:1fr} }
+
+      /* remove visualmente os botões, sem apagar os elementos do DOM */
+      .hide-control { display: none !important; }
+
+      /* Hint removido: nenhum texto de atalho visível na UI */
+      /* Se quiser reativar a dica, remova a div com id="hint-shortcuts" do comentário no HTML abaixo */
+
+      .custom-marker div{box-shadow:0 2px 4px rgba(0,0,0,0.4)}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="display:flex;align-items:center;gap:14px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#06c167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 13l2-5h14l2 5"/>
+          <circle cx="7.5" cy="17.5" r="1.5"/>
+          <circle cx="16.5" cy="17.5" r="1.5"/>
+          <path d="M5 13h14v5H5z"/>
+        </svg>
+        <h1 style="font-family:'Poppins', sans-serif; font-size:24px; font-weight:700; letter-spacing:0.5px;">TransFlow Prime+</h1>
+      </div>
+
+      <nav>
+        <a href="/docs" target="_blank">API Docs</a>
+        <a href="http://localhost:15672" target="_blank">RabbitMQ</a>
+      </nav>
+    </header>
+
+    <main>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <section aria-labelledby="map-title">
+          <h2 id="map-title">Mapa</h2>
+          <div id="map"></div>
+        </section>
+
+        <section>
+          <h2>Cadastrar Corrida</h2>
+          <form id="form-corrida">
+            <div class="grid">
+              <label>ID Corrida<input name="id_corrida" required /></label>
+              <label>Passageiro<input name="passageiro_nome" required /></label>
+              <label>Telefone<input name="passageiro_telefone" required /></label>
+              <label>Motorista<input name="motorista_nome" required /></label>
+              <label>Nota<input name="motorista_nota" type="number" step="0.1" min="0" max="5" required /></label>
+              <label>Origem<input name="origem" required /></label>
+              <label>Destino<input name="destino" required /></label>
+              <label>Valor<input name="valor_corrida" type="number" step="0.01" min="0" required /></label>
+              <label>Pagamento
+                <select name="forma_pagamento" required>
+                  <option value="">Selecione</option>
+                  <option value="cartao">Cartão</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="pix">PIX</option>
+                </select>
+              </label>
+            </div>
+
+            <!-- CONTROLS: id para seleção única -->
+            <div id="form-controls" style="display:flex;align-items:center;gap:12px;margin-top:10px">
+              <button type="submit" class="primary">Publicar Corrida</button>
+              <span id="status-publicacao">&nbsp;</span>
+            </div>
+
+            <!-- Nota: hint removido intencionalmente para UI limpa -->
+            <!-- <div id="hint-shortcuts" style="display:none">Atalhos: T = traçar; O = definir origem; D = definir destino</div> -->
+          </form>
+        </section>
+      </div>
+
+      <aside style="display:flex;flex-direction:column;gap:18px">
+        <section>
+          <h2>Filtros</h2>
+          <div class="grid">
+            <label>Forma de Pagamento<input id="filtro-pagamento" placeholder="ex: pix / cartao" /></label>
+            <button id="btn-filtrar" class="btn-ghost">Filtrar Corridas</button>
+            <label>Motorista<input id="consulta-motorista" placeholder="nome do motorista" /></label>
+            <button id="btn-saldo" class="btn-ghost">Consultar Saldo</button>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+            <h2>Corridas</h2>
+            <button id="btn-atualizar-corridas" class="btn-ghost">Atualizar</button>
+          </div>
+          <div id="lista-corridas" class="cards" aria-live="polite"></div>
+        </section>
+
+        <section>
+          <h2>Saldos</h2>
+          <button id="btn-atualizar-saldos" class="btn-ghost">Atualizar</button>
+          <table id="tabela-saldos">
+            <thead><tr><th>Motorista</th><th>Saldo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+      </aside>
+    </main>
+
+    <footer style="padding:18px 24px;text-align:center;color:rgba(255,255,255,0.6)">TransFlow Prime+ • Painel de administração</footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
+
+    <script>
+      // estado local
+      let corridas = [];
+      let routingControl = null;
+      let tempMarker = null;
+
+      // mapa
+      const map = L.map('map').setView([-22.919, -43.253], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+      L.marker([-22.919, -43.253]).addTo(map).bindPopup('TransFlow Prime +');
+
+      // geocode
+      async function geocode(q){
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`;
+        try{
+          const res = await fetch(url, {headers:{'Accept':'application/json'}});
+          const data = await res.json();
+          if(data && data.length) return {lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon)};
+        }catch(e){ console.error('geocode error', e); }
+        return null;
+      }
+      async function resolveLocation(q){
+        if(!q || typeof q !== 'string') return null;
+        const latlon = q.split(',').map(s=>s.trim());
+        if(latlon.length===2 && !isNaN(Number(latlon[0])) && !isNaN(Number(latlon[1]))){
+          return {lat:parseFloat(latlon[0]), lon:parseFloat(latlon[1])};
+        }
+        return await geocode(q);
+      }
+
+      // desenhar rota
+      function drawRoute(fromLatLng, toLatLng){
+        if(routingControl){
+          try{ map.removeControl(routingControl); } catch(e){ console.warn(e); }
+          routingControl = null;
+        }
+        routingControl = L.Routing.control({
+          waypoints: [L.latLng(fromLatLng.lat, fromLatLng.lon), L.latLng(toLatLng.lat, toLatLng.lon)],
+          router: L.Routing.osrmv1({serviceUrl: 'https://router.project-osrm.org/route/v1'}),
+          show:false, addWaypoints:false, fitSelectedRoute:true,
+          lineOptions:{styles:[{color:'#06c167', opacity:0.95, weight:6}]},
+          createMarker: function(i, wp){
+            const el = L.divIcon({ className:'custom-marker', html: i===0 ? '<div style="background:#06c167;border-radius:8px;padding:6px;color:#fff;font-weight:700">A</div>' : '<div style="background:#7c3aed;border-radius:8px;padding:6px;color:#fff;font-weight:700">B</div>' });
+            return L.marker(wp.latLng, {icon: el});
+          }
+        }).addTo(map);
+      }
+
+      // elementos do form
+      const form = document.getElementById('form-corrida');
+      const origemInput = form.querySelector('[name="origem"]');
+      const destinoInput = form.querySelector('[name="destino"]');
+      const status = document.getElementById('status-publicacao');
+      const formControls = document.getElementById('form-controls');
+
+      // cria botões dinamicamente, mas escondidos visualmente com class 'hide-control'
+      const btnTrace = document.createElement('button');
+      btnTrace.type = 'button';
+      btnTrace.className = 'primary hide-control';
+      btnTrace.style.marginLeft = '8px';
+      btnTrace.textContent = 'Traçar Rota';
+      formControls.appendChild(btnTrace);
+
+      const btnSetOrigem = document.createElement('button');
+      btnSetOrigem.type='button';
+      btnSetOrigem.className='secondary hide-control';
+      btnSetOrigem.textContent='Definir Origem (clicar mapa)';
+      formControls.appendChild(btnSetOrigem);
+
+      const btnSetDestino = document.createElement('button');
+      btnSetDestino.type='button';
+      btnSetDestino.className='secondary hide-control';
+      btnSetDestino.textContent='Definir Destino (clicar mapa)';
+      formControls.appendChild(btnSetDestino);
+
+      // comportamentos dos botões (mesmo que estejam hidden)
+      btnTrace.addEventListener('click', async ()=>{
+        const origem = origemInput.value.trim();
+        const destino = destinoInput.value.trim();
+        if(!origem || !destino){ alert('Informe origem e destino para traçar a rota'); return; }
+        const gO = await resolveLocation(origem);
+        const gD = await resolveLocation(destino);
+        if(!gO || !gD){ alert('Não foi possível geocodificar um dos endereços'); return; }
+        drawRoute(gO, gD);
+        map.fitBounds([[gO.lat,gO.lon],[gD.lat,gD.lon]], {padding:[80,80]});
+      });
+
+      // clique no mapa para setar origem/destino
+      let mode = null; // 'origem' | 'destino' | null
+      map.on('click', function(e){
+        if(!mode) return;
+        if(tempMarker) map.removeLayer(tempMarker);
+        tempMarker = L.marker(e.latlng).addTo(map);
+        if(mode==='origem'){
+          origemInput.value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        } else {
+          destinoInput.value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        }
+        mode = null;
+      });
+
+      btnSetOrigem.addEventListener('click', ()=>{ mode='origem'; alert('Clique no mapa para definir a origem');});
+      btnSetDestino.addEventListener('click', ()=>{ mode='destino'; alert('Clique no mapa para definir o destino');});
+
+      // atalhos de teclado (mantêm as funcionalidades mesmo com os botões escondidos)
+      document.addEventListener('keydown', (ev)=>{
+        // evita interpretar atalhos enquanto o usuário digita em um input
+        const activeTag = document.activeElement && document.activeElement.tagName.toLowerCase();
+        if(activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+        if(ev.key.toLowerCase() === 't'){ // traçar
+          ev.preventDefault();
+          btnTrace.click();
+        } else if(ev.key.toLowerCase() === 'o'){ // origem
+          ev.preventDefault();
+          btnSetOrigem.click();
+        } else if(ev.key.toLowerCase() === 'd'){ // destino
+          ev.preventDefault();
+          btnSetDestino.click();
+        }
+      });
+
+      // render corridas e saldos (simples)
+      const listaCorridasEl = document.getElementById('lista-corridas');
+      const tabelaSaldosBody = document.querySelector('#tabela-saldos tbody');
+
+      function renderCorridas(list = corridas){
+        listaCorridasEl.innerHTML = '';
+        if(!list.length){
+          listaCorridasEl.innerHTML = '<div style="color:rgba(255,255,255,0.6)">Nenhuma corrida cadastrada</div>';
+          return;
+        }
+        list.forEach(c => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-weight:700">${c.passageiro_nome || '—'}</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.6)">${c.motorista_nome || '—'}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-weight:700">R$ ${Number(c.valor_corrida || 0).toFixed(2)}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.6)">${c.forma_pagamento || ''}</div>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:13px;color:rgba(255,255,255,0.85)"><strong>Origem:</strong> ${c.origem || '—'}</div>
+            <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.85)"><strong>Destino:</strong> ${c.destino || '—'}</div>
+          `;
+          listaCorridasEl.appendChild(card);
+        });
+      }
+
+      function renderSaldos(){
+        const mapSaldos = {};
+        corridas.forEach(c => {
+          const m = (c.motorista_nome || '—').trim();
+          const v = Number(c.valor_corrida || 0);
+          if(!mapSaldos[m]) mapSaldos[m] = 0;
+          mapSaldos[m] += v;
+        });
+        tabelaSaldosBody.innerHTML = '';
+        Object.keys(mapSaldos).forEach(m => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${m}</td><td>R$ ${mapSaldos[m].toFixed(2)}</td>`;
+          tabelaSaldosBody.appendChild(tr);
+        });
+        if(Object.keys(mapSaldos).length === 0){
+          tabelaSaldosBody.innerHTML = '<tr><td colspan="2" style="color:rgba(255,255,255,0.6)">Sem saldos</td></tr>';
+        }
+      }
+
+      // botões de atualizar/filtrar
+      document.getElementById('btn-atualizar-corridas').addEventListener('click', ()=> renderCorridas());
+      document.getElementById('btn-atualizar-saldos').addEventListener('click', ()=> renderSaldos());
+      document.getElementById('btn-filtrar').addEventListener('click', ()=>{
+        const q = document.getElementById('filtro-pagamento').value.trim().toLowerCase();
+        if(!q) return renderCorridas();
+        renderCorridas(corridas.filter(c => (c.forma_pagamento || '').toLowerCase().includes(q)));
+      });
+
+      // submit - publica corrida e traça rota automaticamente (se possível)
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.valor_corrida = parseFloat(data.valor_corrida || 0);
+        data.motorista_nota = parseFloat(data.motorista_nota || 0);
+
+        const o = await resolveLocation(data.origem);
+        const d = await resolveLocation(data.destino);
+
+        if(o && d){
+          status.textContent = 'Traçando rota...';
+          try{
+            drawRoute(o,d);
+            map.fitBounds([[o.lat,o.lon],[d.lat,d.lon]], {padding:[80,80]});
+            await new Promise(r=>setTimeout(r,400));
+            status.textContent = 'Corrida publicada ✓';
+          }catch(err){
+            console.warn('Erro ao traçar rota', err);
+            status.textContent = 'Corrida publicada (rota não disponível)';
+          }
+        }else{
+          status.textContent = 'Corrida publicada (endereços não localizados)';
+        }
+
+        corridas.unshift(data);
+        setTimeout(()=> status.textContent = '', 2500);
+        form.reset();
+        renderCorridas();
+        renderSaldos();
+      });
+
+      // init
+      renderCorridas();
+      renderSaldos();
+    </script>
+  </body>
+</html>
