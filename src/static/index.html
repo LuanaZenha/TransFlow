@@ -78,9 +78,6 @@
       /* remove visualmente os botões, sem apagar os elementos do DOM */
       .hide-control { display: none !important; }
 
-      /* Hint removido: nenhum texto de atalho visível na UI */
-      /* Se quiser reativar a dica, remova a div com id="hint-shortcuts" do comentário no HTML abaixo */
-
       .custom-marker div{box-shadow:0 2px 4px rgba(0,0,0,0.4)}
     </style>
   </head>
@@ -136,9 +133,6 @@
               <button type="submit" class="primary">Publicar Corrida</button>
               <span id="status-publicacao">&nbsp;</span>
             </div>
-
-            <!-- Nota: hint removido intencionalmente para UI limpa -->
-            <!-- <div id="hint-shortcuts" style="display:none">Atalhos: T = traçar; O = definir origem; D = definir destino</div> -->
           </form>
         </section>
       </div>
@@ -184,9 +178,29 @@
       let routingControl = null;
       let tempMarker = null;
 
-      // mapa
-      const map = L.map('map').setView([-22.919, -43.253], 13);
+      // mapa (inicial)
+      const map = L.map('map').setView([-14.2, -53.9], 4); // visão inicial do Brasil (centralizada)
+
+      // Tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+
+      // === LIMITES DO BRASIL: bbox aproximada ===
+      const brazilBounds = L.latLngBounds([
+        [-33.75, -73.99],  // SW (sul-oeste)
+        [ 5.2718, -34.792] // NE (norte-leste)
+      ]);
+
+      // aplica limites rígidos: impede arrastar para fora do Brasil
+      map.setMaxBounds(brazilBounds);
+      map.options.maxBoundsViscosity = 1.0;
+
+      // força o mapa a iniciar dentro do Brasil e aplica limites de zoom
+      map.fitBounds(brazilBounds, {padding:[40,40]});
+      map.setMinZoom(4);
+      map.setMaxZoom(13);
+      // ==========================================
+
+      // marcador inicial (opcional)
       L.marker([-22.919, -43.253]).addTo(map).bindPopup('TransFlow Prime +');
 
       // geocode
@@ -261,6 +275,14 @@
         const gO = await resolveLocation(origem);
         const gD = await resolveLocation(destino);
         if(!gO || !gD){ alert('Não foi possível geocodificar um dos endereços'); return; }
+
+        // garante que os pontos geocodificados estejam dentro do BrasilBounds
+        const pFrom = L.latLng(gO.lat, gO.lon);
+        const pTo = L.latLng(gD.lat, gD.lon);
+        if(!brazilBounds.contains(pFrom) || !brazilBounds.contains(pTo)){
+          if(!confirm('Um dos pontos está fora do Brasil. Deseja traçar mesmo assim?')) return;
+        }
+
         drawRoute(gO, gD);
         map.fitBounds([[gO.lat,gO.lon],[gD.lat,gD.lon]], {padding:[80,80]});
       });
@@ -372,6 +394,13 @@
         if(o && d){
           status.textContent = 'Traçando rota...';
           try{
+            // se os pontos estiverem muito fora do brazilBounds, avisamos antes de forçar
+            const pFrom = L.latLng(o.lat, o.lon);
+            const pTo = L.latLng(d.lat, d.lon);
+            if(!brazilBounds.contains(pFrom) || !brazilBounds.contains(pTo)){
+              // ainda traçamos, mas avisa no console e no status
+              console.warn('Um dos pontos geocodificados está fora do Brasil.');
+            }
             drawRoute(o,d);
             map.fitBounds([[o.lat,o.lon],[d.lat,d.lon]], {padding:[80,80]});
             await new Promise(r=>setTimeout(r,400));
