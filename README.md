@@ -228,7 +228,3 @@ Go Live no VSCode
 
 
 A rota aparecerá automaticamente no mapa.
-=======
-# TransFlow
-P2
->>>>>>> decbfe8e31ddc039a5c24bcda1e7d389c7051e7f
