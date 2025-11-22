@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 🚖 TransFlow – Plataforma de Corridas Assíncronas + Dashboard Front-end
 
 Sistema completo para gerenciamento de corridas, processamento assíncrono e painel administrativo com mapa em tempo real.
@@ -227,3 +228,7 @@ Go Live no VSCode
 
 
 A rota aparecerá automaticamente no mapa.
+=======
+# TransFlow
+P2
+>>>>>>> decbfe8e31ddc039a5c24bcda1e7d389c7051e7f
