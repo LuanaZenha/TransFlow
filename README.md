@@ -67,10 +67,15 @@ Tabela de saldos por motorista
 ✨ Funcionalidades do Front-end
 
 ✔ Traça rota automaticamente ao publicar a corrida
+
 ✔ Traça rota manual via atalho T
+
 ✔ Seleciona origem e destino clicando no mapa (O e D)
+
 ✔ Visualização completa das corridas cadastradas
+
 ✔ Atualização de saldos direto do Redis
+
 ✔ Filtros por forma de pagamento e motorista
 
 O dashboard consome diretamente os endpoints FastAPI.
