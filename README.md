@@ -204,3 +204,7 @@ Go Live no VSCode
 
 
 A rota aparecerá automaticamente no mapa.
+
+Feito por: 
+Luana de Pinho Zenha - 202322133
+Amanda Nick de Oliveira Caldas - 202322056

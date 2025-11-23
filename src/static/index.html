@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TransFlow Prime +</title>
+    <title>TransFlow Prime+</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -75,7 +75,6 @@
 
       @media(max-width:900px){ main{grid-template-columns:1fr} }
 
-      /* remove visualmente os botões, sem apagar os elementos do DOM */
       .hide-control { display: none !important; }
 
       .custom-marker div{box-shadow:0 2px 4px rgba(0,0,0,0.4)}
@@ -128,7 +127,6 @@
               </label>
             </div>
 
-            <!-- CONTROLS: id para seleção única -->
             <div id="form-controls" style="display:flex;align-items:center;gap:12px;margin-top:10px">
               <button type="submit" class="primary">Publicar Corrida</button>
               <span id="status-publicacao">&nbsp;</span>
@@ -184,7 +182,7 @@
       // Tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
 
-      // === LIMITES DO BRASIL: bbox aproximada ===
+      // === LIMITES - BRASIL ===
       const brazilBounds = L.latLngBounds([
         [-33.75, -73.99],  // SW (sul-oeste)
         [ 5.2718, -34.792] // NE (norte-leste)
@@ -200,7 +198,6 @@
       map.setMaxZoom(13);
       // ==========================================
 
-      // marcador inicial (opcional)
       L.marker([-22.919, -43.253]).addTo(map).bindPopup('TransFlow Prime +');
 
       // geocode
@@ -247,7 +244,6 @@
       const status = document.getElementById('status-publicacao');
       const formControls = document.getElementById('form-controls');
 
-      // cria botões dinamicamente, mas escondidos visualmente com class 'hide-control'
       const btnTrace = document.createElement('button');
       btnTrace.type = 'button';
       btnTrace.className = 'primary hide-control';
@@ -267,7 +263,6 @@
       btnSetDestino.textContent='Definir Destino (clicar mapa)';
       formControls.appendChild(btnSetDestino);
 
-      // comportamentos dos botões (mesmo que estejam hidden)
       btnTrace.addEventListener('click', async ()=>{
         const origem = origemInput.value.trim();
         const destino = destinoInput.value.trim();
@@ -276,7 +271,6 @@
         const gD = await resolveLocation(destino);
         if(!gO || !gD){ alert('Não foi possível geocodificar um dos endereços'); return; }
 
-        // garante que os pontos geocodificados estejam dentro do BrasilBounds
         const pFrom = L.latLng(gO.lat, gO.lon);
         const pTo = L.latLng(gD.lat, gD.lon);
         if(!brazilBounds.contains(pFrom) || !brazilBounds.contains(pTo)){
@@ -287,8 +281,7 @@
         map.fitBounds([[gO.lat,gO.lon],[gD.lat,gD.lon]], {padding:[80,80]});
       });
 
-      // clique no mapa para setar origem/destino
-      let mode = null; // 'origem' | 'destino' | null
+      let mode = null; 
       map.on('click', function(e){
         if(!mode) return;
         if(tempMarker) map.removeLayer(tempMarker);
@@ -304,19 +297,17 @@
       btnSetOrigem.addEventListener('click', ()=>{ mode='origem'; alert('Clique no mapa para definir a origem');});
       btnSetDestino.addEventListener('click', ()=>{ mode='destino'; alert('Clique no mapa para definir o destino');});
 
-      // atalhos de teclado (mantêm as funcionalidades mesmo com os botões escondidos)
       document.addEventListener('keydown', (ev)=>{
-        // evita interpretar atalhos enquanto o usuário digita em um input
         const activeTag = document.activeElement && document.activeElement.tagName.toLowerCase();
         if(activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
 
-        if(ev.key.toLowerCase() === 't'){ // traçar
+        if(ev.key.toLowerCase() === 't'){ 
           ev.preventDefault();
           btnTrace.click();
-        } else if(ev.key.toLowerCase() === 'o'){ // origem
+        } else if(ev.key.toLowerCase() === 'o'){ 
           ev.preventDefault();
           btnSetOrigem.click();
-        } else if(ev.key.toLowerCase() === 'd'){ // destino
+        } else if(ev.key.toLowerCase() === 'd'){ 
           ev.preventDefault();
           btnSetDestino.click();
         }
@@ -381,7 +372,6 @@
         renderCorridas(corridas.filter(c => (c.forma_pagamento || '').toLowerCase().includes(q)));
       });
 
-      // submit - publica corrida e traça rota automaticamente (se possível)
       form.addEventListener('submit', async (e)=>{
         e.preventDefault();
         const data = Object.fromEntries(new FormData(form).entries());
@@ -394,11 +384,9 @@
         if(o && d){
           status.textContent = 'Traçando rota...';
           try{
-            // se os pontos estiverem muito fora do brazilBounds, avisamos antes de forçar
             const pFrom = L.latLng(o.lat, o.lon);
             const pTo = L.latLng(d.lat, d.lon);
             if(!brazilBounds.contains(pFrom) || !brazilBounds.contains(pTo)){
-              // ainda traçamos, mas avisa no console e no status
               console.warn('Um dos pontos geocodificados está fora do Brasil.');
             }
             drawRoute(o,d);
@@ -420,9 +408,10 @@
         renderSaldos();
       });
 
-      // init
       renderCorridas();
       renderSaldos();
     </script>
   </body>
 </html>
+
+
